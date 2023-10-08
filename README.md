@@ -1,0 +1,2 @@
+# Functional Programming in Haskell
+This repository is a collection of code in haskell to show the features of the programming language, and also some exercises done during the **Advanced Progamming** course of my Master's Degree in Computer Science at University of Pisa.
