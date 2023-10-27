@@ -182,6 +182,88 @@ test9 = do
   print (describeTree (succTree sampleTree))
   print (sumSucc sampleTree)
 
+-- Exercise 10
+data Expr a = Const a | Sum (Expr a) (Expr a) | Mul (Expr a) (Expr a)
+  | Div (Expr a) (Expr a)
+
+describeExpr :: (Show a, Num a) => Expr a -> String
+describeExpr (Const x) = "(Const: " ++ show x ++ ")"
+describeExpr (Sum l r) = " [Sum of: " ++ describeExpr l ++ " and "
+  ++ describeExpr r ++ "] "
+describeExpr (Mul l r) = " [Mul of: " ++ describeExpr l ++ " and "
+  ++ describeExpr r ++ "] "
+describeExpr (Div l r) = " [Div of: " ++ describeExpr l ++ " and "
+  ++ describeExpr r ++ "] "
+ 
+eval :: (Num a) => Expr a -> a 
+eval (Const a) = a
+eval (Sum l r) = eval l + eval r
+eval (Mul l r) = eval l * eval r
+
+test10 :: IO()
+test10 = do
+  print ("--- Exercise 10 ---")
+  print(eval(Sum (Mul (Const 2) (Const 2)) (Mul (Const 4) (Const 4))))
+
+-- Exercise 11
+uglySafeEval :: (Integral a, Eq a) => Expr a -> Maybe a 
+uglySafeEval (Const a) = Just a
+uglySafeEval (Sum l r) = case uglySafeEval l of
+  Nothing -> Nothing
+  Just left -> case uglySafeEval r of 
+    Nothing -> Nothing
+    Just right -> Just (left + right)
+uglySafeEval (Mul l r) = case uglySafeEval l of
+  Nothing -> Nothing
+  Just left -> case uglySafeEval r of
+    Nothing -> Nothing
+    Just right -> Just (left * right)
+uglySafeEval (Div n d) = case uglySafeEval n of 
+  Nothing -> Nothing
+  Just numerator -> case uglySafeEval d of
+    Nothing -> Nothing
+    Just denominator -> if (denominator == 0) 
+      then Nothing 
+      else Just (numerator `div` denominator)
+
+safeEval :: (Integral a, Eq a) => Expr a -> Maybe a
+safeEval (Const a) = Just a
+safeEval (Sum l r) = do { -- imperative-style syntax
+  left <- safeEval l;
+  right <- safeEval r;
+  return (left + right); 
+}
+safeEval (Mul l r) = safeEval l >>= -- using bind of the Maybe monad
+  (\left -> safeEval r >>= 
+    (\right -> return (left * right)))
+safeEval (Div n d) = do {
+  num <- safeEval n;
+  den <- safeEval d;
+  if (den == 0) then Nothing else return (num `div` den); 
+}
+
+test11 :: IO()
+test11 = do
+  print ("--- Exercise 11 ---")
+  print(safeEval( Div (Sum (Const 5) (Const 5)) (Mul (Const 1) (Const 2)) ))
+  print(safeEval( Div (Const 12) (Const 0)))
+  print(safeEval( Div (Const 12) (Const 5)))
+
+-- Exercise 12
+instance Functor Expr where -- extending Expr to support fmap
+  fmap f (Const x) = Const (f x)
+  fmap f (Sum l r) = Sum (fmap f l) (fmap f r)
+  fmap f (Mul l r) = Mul (fmap f l) (fmap f r)
+  fmap f (Div l r) = Div (fmap f l) (fmap f r)
+
+test12 :: IO()
+test12 = do
+  print ("--- Exercise 12 ---")
+  print (describeExpr( Div (Sum (Const 5) (Const 5)) (Mul (Const 1) (Const 2))))
+  print (describeExpr(
+    fmap (+1) (Div (Sum (Const 5) (Const 5)) (Mul (Const 1) (Const 2))) 
+    ))
+
 performTests :: IO()
 performTests = do
   test1
@@ -193,6 +275,9 @@ performTests = do
   test7
   test8
   test9
+  test10
+  test11
+  test12
 
 main = do
   performTests
